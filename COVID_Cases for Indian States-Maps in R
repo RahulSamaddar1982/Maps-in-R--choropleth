@@ -1,0 +1,98 @@
+library(ggplot2)
+library(RColorBrewer)
+library(ggmap)
+library(maps)
+library(rgdal)
+library(scales)
+library(maptools)
+library(gridExtra)
+library(rgeos)
+library(sp)
+setwd("C:\\Users\\Rahul\\Desktop\\R Tutorial\\Map")
+states_shape = readShapeSpatial("IND_adm2.shp")
+wb_shape = (states_shape[states_shape$NAME_1=="Assam",])
+class(states_shape)
+names(states_shape)
+print(states_shape$ID_1)
+print(states_shape$NAME_1)
+plot(states_shape, main = "Administrative Map of India")
+
+class(wb_shape)
+names(wb_shape)
+print(wb_shape$ID_2)
+print(wb_shape$NAME_2)
+plot(wb_shape, main = "Administrative Map of Assam")
+
+write.csv(wb_shape$NAME_2,"Assam.csv",col.names = FALSE)
+
+# Creating our own dataset
+set.seed(100)
+State_count = length(wb_shape$NAME_2)
+score_1 = sample(100:1000, State_count, replace = T)
+score_2 = runif(State_count, 1,1000)
+score = score_1 + score_2
+State_data = data.frame(id=wb_shape$ID_2, NAME_2=wb_shape$NAME_2, score)
+State_data
+
+#Reading File
+d1<-read.csv(file.choose(),header = T)
+head(d1)
+State_data = data.frame(id=wb_shape$ID_2, NAME_2=wb_shape$NAME_2, d1$Count)
+State_data
+
+# Fortify file
+fortify_shape = fortify(wb_shape, region = "ID_2")
+class(fortify_shape)
+fortify_shape
+
+#merge with coefficients and reorder
+Merged_data = merge(fortify_shape, State_data, by="id", all.x=TRUE)
+Map_plot = Merged_data[order(Merged_data$order), ]
+print(Merged_data)
+print(Map_plot)
+      
+
+ggplot() +
+  geom_polygon(data = Map_plot,
+               aes(x = long, y = lat, group = group, fill = d1.Count),
+               color = "black", size = 0.5) +
+  coord_map()+
+scale_fill_distiller(name="Cases")+
+  theme_nothing(legend = TRUE)+
+  labs(title="COVID Cases in Assam - Distribution by District")
+
+
+p<-ggplot() +
+   geom_polygon(data = Map_plot,
+                   aes(x = long, y = lat, group = group, fill = d1.Count),
+                   color = "black", size = 0.5) +
+    coord_map()+
+  scale_fill_distiller(name="Cases")+
+  theme_nothing(legend = TRUE)+
+  labs(title="Score in Assam - Distribution by District")
+p
+
+ggplot() +
+  geom_polygon(data = Map_plot,
+                   aes(x = long, y = lat, group = group, fill = d1.Count),
+                   color = " Red", size = 1) +
+  coord_map()+
+  scale_fill_distiller(name="Cases", palette = "Set3" , breaks = pretty_breaks(n = 7))+
+  theme_nothing(legend = TRUE)+
+  labs(title="Cases in Assam - Distribution by District")+
+  geom_text(data=name_lat_lon, aes(long, lat, label = NAME_1), size=2)
+
+  
+# Clear environment
+rm(list = ls()) 
+
+# Clear packages
+detach("package:datasets", unload = TRUE)  # For base
+
+# Clear plots
+dev.off()  # But only if there IS a plot
+
+# Clear console
+cat("\014")  # ctrl+L
+
+# Clear mind :)
